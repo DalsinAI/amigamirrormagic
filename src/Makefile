@@ -315,12 +315,12 @@ conf_mus.h: conf_mus.c $(CNFS_CMD)
 	@$(MAKE) auto-conf
 
 conf-time:
-	@echo '#define SOURCE_DATE_STRING "$(SOURCE_DATE_STRING)"' \
-	> $(TIMESTAMP_FILE)
+#	@echo '#define SOURCE_DATE_STRING "$(SOURCE_DATE_STRING)"' \
+#	> $(TIMESTAMP_FILE)
 
 conf-hash:
-	@echo '#define SOURCE_HASH_STRING "$(SOURCE_HASH_STRING)"' \
-	> $(COMMIT_HASH_FILE)
+#	@echo '#define SOURCE_HASH_STRING "$(SOURCE_HASH_STRING)"' \
+#	> $(COMMIT_HASH_FILE)
 
 config.o: config.c $(TIMESTAMP_FILE)
 

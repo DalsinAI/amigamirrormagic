@@ -1135,6 +1135,18 @@ char *getPath2(char *path1, char *path2)
     return getStringCopy(path1);
 #endif
 
+#if defined(__amigaos__)
+  // AmigaOS: "PROGDIR:/x" and "a//x" name a parent drawer, so no "/" after
+  // a volume's ":" or a path's own "/"; and "." is only the other part
+  if (strEqual(path1, "."))
+    return getStringCopy(path2);
+  if (strEqual(path2, "."))
+    return getStringCopy(path1);
+  if (path1[0] != '\0' &&
+      (path1[strlen(path1) - 1] == ':' || path1[strlen(path1) - 1] == '/'))
+    return getStringCat2(path1, path2);
+#endif
+
   return getStringCat2WithSeparator(path1, path2, STRING_PATH_SEPARATOR);
 }
 

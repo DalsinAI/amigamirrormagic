@@ -1,0 +1,84 @@
+# Mirror Magic 3.3.1 for AmigaOS 3.x, 68040/68060 + FPU, on OpenGPU's SDL 2.
+#
+#   make -f amiga/Makefile.amigaos -j2 dist \
+#        STOVE=/path/to/openamigagcc-16.2.0-open4 \
+#        SDL2KIT=/path/to/opengpu-sdk DEPS=/path/to/m68k-amigaos
+#
+# src/Makefile's program (src, libgame with its zip reader, game_em, game_mm
+# and game_sp) for the SDL 2 target, with BASE_PATH the program's drawer.
+# SDL2KIT is the OpenGPU developer kit (SDL2, SDL2_image, SDL2_mixer and
+# SDL2_net: the program's halves of LIBS:OpenGPU's modules; SDL2_net on
+# bsdsocket.library through -lsocket, as the Blob Wars port links it). DEPS has the
+# Team's static zlib (/mnt/amigachrome/team2/deps/m68k-amigaos).
+
+STOVE   ?= $(HOME)/CradleLab/toolchain/openamigagcc-16.2.0-open4-x86_64-linux
+SDL2KIT ?= /mnt/amigachrome/team2/deps/opengpu-sdk
+DEPS    ?= /mnt/amigachrome/team2/deps/m68k-amigaos
+CC      = $(STOVE)/bin/m68k-amigaos-gcc
+STRIP   = $(STOVE)/bin/m68k-amigaos-strip
+CPU     ?= -m68040 -m68881
+# -fno-tree-loop-distribute-patterns: GCC 16's loop miscompile (the kit's
+# sdl2-config gives it for GCC 16 too).
+OPT     ?= -O2 -fomit-frame-pointer -fno-tree-loop-distribute-patterns
+
+BUILD   = build/amigaos
+OBJDIR  = $(BUILD)/obj
+PROG    = MirrorMagic
+OUT     = dist/MirrorMagic
+
+# The zip reader's 64-bit stdio calls are libnix's own (32-bit files).
+DEFS    = -D__amigaos__ -DTARGET_SDL2 -DBASE_PATH=\"PROGDIR:\" -DUSE_FILE32API \
+          -Dfopen64=fopen -Dfseeko64=fseek -Dftello64=ftell
+INC     = -Iamiga/include -Isrc -Isrc/libgame -I$(SDL2KIT)/include/SDL2 -I$(SDL2KIT)/include -I$(DEPS)/include
+CFLAGS  = -noixemul $(OPT) $(CPU) -fno-common -MMD -MP -std=gnu99 -w
+LDFLAGS = -noixemul $(CPU) -Wl,--wrap=getenv
+LIBS    = -L$(SDL2KIT)/lib -L$(DEPS)/lib -lSDL2_image -lSDL2_mixer -lSDL2_net -lSDL2 -lGL -lz \
+          -lsocket -lpthread -latomic -lm
+
+# the SRCS of src/Makefile and src/libgame/Makefile (the conf_*.c the
+# others include are not built on their own; zip/iowin32.c is Windows'),
+# and every file of game_em, game_mm and game_sp
+SRC     = $(addprefix src/,main.c conf_gfx.c conf_snd.c conf_mus.c conf_hlp.c init.c config.c \
+            events.c tools.c screens.c game.c editor.c files.c tape.c anim.c api.c network.c \
+            netserv.c) \
+          $(addprefix src/libgame/,system.c gadgets.c text.c sound.c joystick.c snapshot.c \
+            image.c random.c hash.c http.c base64.c setup.c misc.c sdl.c zip/ioapi.c zip/unzip.c \
+            zip/miniunz.c) \
+          $(wildcard src/game_em/*.c) $(wildcard src/game_mm/*.c) $(wildcard src/game_sp/*.c)
+CSRC    = amiga/stack.c amiga/amiga_env.c
+OBJS    = $(SRC:%.c=$(OBJDIR)/%.o) $(CSRC:%.c=$(OBJDIR)/%.o)
+ICONS   = $(wildcard amiga/icons/*.info)
+
+all: $(BUILD)/$(PROG)
+
+$(BUILD)/$(PROG): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@.debug $(OBJS) $(LIBS)
+	$(STRIP) -o $@ $@.debug
+
+$(OBJDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEFS) $(INC) -c -o $@ $<
+
+# The drawer: the program beside its data, as upstream lays it out (BASE_PATH
+# is the drawer): conf, graphics, levels, sounds and the empty music drawer
+# (Debian's free source has no music); docs, ReadMe and the licence. The
+# settings, scores, tapes and the player's own levels are kept in the
+# drawer's user/.mirrormagic.
+dist: $(BUILD)/$(PROG) $(ICONS) AMIGA_PORT.md
+	rm -rf $(OUT) && mkdir -p $(OUT)/music
+	cp $(BUILD)/$(PROG) $(OUT)/
+	cp -R conf docs graphics levels sounds $(OUT)/
+	cp AMIGA_PORT.md $(OUT)/ReadMe
+	cp COPYING $(OUT)/COPYING.txt
+	cp CREDITS $(OUT)/CREDITS.txt
+	cp amiga/icons/MirrorMagic.info amiga/icons/ReadMe.info $(OUT)/
+	for f in COPYING.txt CREDITS.txt; do cp amiga/icons/ReadMe.info $(OUT)/$$f.info; done
+	for d in conf docs graphics levels sounds music; do cp amiga/icons/Folder.info $(OUT)/$$d.info; done
+	cp amiga/icons/MirrorMagic-drawer.info dist/MirrorMagic.info
+
+-include $(OBJS:.o=.d)
+
+clean:
+	rm -rf $(BUILD)
+
+.PHONY: all clean dist

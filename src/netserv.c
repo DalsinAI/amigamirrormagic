@@ -859,7 +859,9 @@ void NetworkServer(int port, int serveronly)
   sact.sa_handler = SIG_IGN;
   sigemptyset(&sact.sa_mask);
   sact.sa_flags = 0;
+#if !defined(__amigaos__)	// AmigaOS: no SIGPIPE to ignore (libnix has no sigaction)
   sigaction(SIGPIPE, &sact, NULL);
+#endif
 #endif
 #endif
 

@@ -73,7 +73,6 @@ dist: $(BUILD)/$(PROG) $(ICONS) AMIGA_PORT.md
 	cp CREDITS $(OUT)/CREDITS.txt
 	cp amiga/icons/MirrorMagic.info amiga/icons/ReadMe.info $(OUT)/
 	for f in COPYING.txt CREDITS.txt; do cp amiga/icons/ReadMe.info $(OUT)/$$f.info; done
-	for d in conf docs graphics levels sounds music; do cp amiga/icons/Folder.info $(OUT)/$$d.info; done
 	cp amiga/icons/MirrorMagic-drawer.info dist/MirrorMagic.info
 
 -include $(OBJS:.o=.d)

@@ -69,6 +69,7 @@ dist: $(BUILD)/$(PROG) $(ICONS) AMIGA_PORT.md
 	cp $(BUILD)/$(PROG) $(OUT)/
 	cp -R conf docs graphics levels sounds $(OUT)/
 	cp AMIGA_PORT.md $(OUT)/ReadMe
+	cp amiga/Controls $(OUT)/Controls
 	cp COPYING $(OUT)/COPYING.txt
 	cp CREDITS $(OUT)/CREDITS.txt
 	cp amiga/icons/MirrorMagic.info amiga/icons/ReadMe.info $(OUT)/
